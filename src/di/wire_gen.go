@@ -18,6 +18,8 @@ import (
 func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	userService := service.NewUserService()
 	userController := handler.NewUserController(userService)
-	serverHTTP := http.NewServerHTTP(userController)
+	productService := service.NewProductService()
+	productController := handler.NewProductController(productService)
+	serverHTTP := http.NewServerHTTP(userController, productController)
 	return serverHTTP, nil
 }

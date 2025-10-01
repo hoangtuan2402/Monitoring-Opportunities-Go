@@ -13,8 +13,15 @@ import (
 
 func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	wire.Build(
+		// Services
 		service.NewUserService,
+		service.NewProductService,
+
+		// Controllers
 		handler.NewUserController,
+		handler.NewProductController,
+
+		// Server
 		http.NewServerHTTP,
 	)
 

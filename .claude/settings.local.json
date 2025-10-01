@@ -3,7 +3,8 @@
     "allow": [
       "Bash(go generate:*)",
       "Bash(go run:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(go mod:*)"
     ],
     "deny": [],
     "ask": []
