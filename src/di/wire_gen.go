@@ -10,6 +10,8 @@ import (
 	"Monitoring-Opportunities/src/api"
 	"Monitoring-Opportunities/src/api/controller"
 	"Monitoring-Opportunities/src/config"
+	"Monitoring-Opportunities/src/database"
+	"Monitoring-Opportunities/src/repository"
 	"Monitoring-Opportunities/src/services"
 )
 
@@ -18,7 +20,12 @@ import (
 func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	userService := service.NewUserService()
 	userController := handler.NewUserController(userService)
-	productService := service.NewProductService()
+	mongoDatabase, err := database.NewMongoDatabase(cfg)
+	if err != nil {
+		return nil, err
+	}
+	productRepository := repository.NewProductRepository(mongoDatabase)
+	productService := service.NewProductService(productRepository)
 	productController := handler.NewProductController(productService)
 	serverHTTP := http.NewServerHTTP(userController, productController)
 	return serverHTTP, nil

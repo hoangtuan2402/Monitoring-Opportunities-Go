@@ -2,8 +2,14 @@ package service
 
 import (
 	"Monitoring-Opportunities/src/dto"
+	"Monitoring-Opportunities/src/models"
+	"Monitoring-Opportunities/src/repository"
+	"context"
 	"errors"
+	"time"
+
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
@@ -24,80 +30,136 @@ type ProductService interface {
 }
 
 type productService struct {
+	repo repository.ProductRepository
 }
 
-func NewProductService() ProductService {
-	return &productService{}
+func NewProductService(repo repository.ProductRepository) ProductService {
+	return &productService{
+		repo: repo,
+	}
 }
 
 func (s *productService) GetAll() ([]dto.ProductDTO, error) {
-	// Mock data
-	return []dto.ProductDTO{
-		{
-			UUID:        uuid.New(),
-			Name:        "iPhone 15 Pro",
-			Description: "Latest iPhone model",
-			Price:       999.99,
-			Stock:       100,
-		},
-		{
-			UUID:        uuid.New(),
-			Name:        "Samsung Galaxy S24",
-			Description: "Latest Samsung flagship",
-			Price:       899.99,
-			Stock:       50,
-		},
-	}, nil
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	products, err := s.repo.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.toProductDTOList(products), nil
 }
 
 func (s *productService) Create(form dto.CreateProduct) (dto.ProductDTO, error) {
-	return dto.ProductDTO{
-		UUID:        uuid.New(),
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	product := &models.Product{
 		Name:        form.Name,
 		Description: form.Description,
 		Price:       form.Price,
 		Stock:       form.Stock,
-	}, nil
+	}
+
+	if err := s.repo.Create(ctx, product); err != nil {
+		return dto.ProductDTO{}, ErrCreateProductValidate
+	}
+
+	return s.toProductDTO(product), nil
 }
 
-func (s *productService) Update(product dto.UpdateProduct, productID uuid.UUID) (dto.ProductDTO, error) {
+func (s *productService) Update(updateData dto.UpdateProduct, productID uuid.UUID) (dto.ProductDTO, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	existingProduct, err := s.repo.FindByID(ctx, productID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return dto.ProductDTO{}, ErrProductNotFound
+		}
+		return dto.ProductDTO{}, ErrUpdateProductValidate
+	}
+
+	existingProduct.Name = updateData.Name
+	existingProduct.Description = updateData.Description
+	existingProduct.Price = updateData.Price
+	existingProduct.Stock = updateData.Stock
+
+	if err := s.repo.Update(ctx, existingProduct); err != nil {
+		return dto.ProductDTO{}, ErrUpdateProductValidate
+	}
+
+	return s.toProductDTO(existingProduct), nil
+}
+
+func (s *productService) Delete(id uuid.UUID) (dto.ProductDTO, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	product, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return dto.ProductDTO{}, ErrProductNotFound
+		}
+		return dto.ProductDTO{}, ErrDeleteProduct
+	}
+
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return dto.ProductDTO{}, ErrDeleteProduct
+	}
+
+	return s.toProductDTO(product), nil
+}
+
+func (s *productService) FindByID(id uuid.UUID) (dto.ProductDTO, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	product, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return dto.ProductDTO{}, ErrProductNotFound
+		}
+		return dto.ProductDTO{}, err
+	}
+
+	return s.toProductDTO(product), nil
+}
+
+func (s *productService) FindByName(name string) ([]dto.ProductDTO, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	products, err := s.repo.FindByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.toProductDTOList(products), nil
+}
+
+// Helper functions to convert models to DTOs
+func (s *productService) toProductDTO(product *models.Product) dto.ProductDTO {
 	return dto.ProductDTO{
-		UUID:        productID,
+		UUID:        product.UUID,
 		Name:        product.Name,
 		Description: product.Description,
 		Price:       product.Price,
 		Stock:       product.Stock,
-	}, nil
+	}
 }
 
-func (s *productService) Delete(id uuid.UUID) (dto.ProductDTO, error) {
-	return dto.ProductDTO{
-		UUID:        id,
-		Name:        "Deleted Product",
-		Description: "Product has been deleted",
-		Price:       0,
-		Stock:       0,
-	}, nil
-}
-
-func (s *productService) FindByID(id uuid.UUID) (dto.ProductDTO, error) {
-	return dto.ProductDTO{
-		UUID:        id,
-		Name:        "Product Found By ID",
-		Description: "Product description",
-		Price:       499.99,
-		Stock:       75,
-	}, nil
-}
-
-func (s *productService) FindByName(name string) ([]dto.ProductDTO, error) {
-	return []dto.ProductDTO{
-		{
-			UUID:        uuid.New(),
-			Name:        name,
-			Description: "Product found by name",
-			Price:       599.99,
-			Stock:       30,
-		},
-	}, nil
+func (s *productService) toProductDTOList(products []models.Product) []dto.ProductDTO {
+	dtos := make([]dto.ProductDTO, len(products))
+	for i, product := range products {
+		dtos[i] = dto.ProductDTO{
+			UUID:        product.UUID,
+			Name:        product.Name,
+			Description: product.Description,
+			Price:       product.Price,
+			Stock:       product.Stock,
+		}
+	}
+	return dtos
 }
