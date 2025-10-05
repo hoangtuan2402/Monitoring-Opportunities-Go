@@ -32,7 +32,7 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	if err != nil {
 		return nil, err
 	}
-	dexGateway := gateway.NewUniswapV2Gateway(ethereumClient)
+	dexGateway := gateway.NewUniswapV2PairGateway(ethereumClient)
 	poolService := service.NewPoolService(dexGateway)
 	poolController := handler.NewPoolController(poolService)
 	serverHTTP := http.NewServerHTTP(userController, productController, poolController)

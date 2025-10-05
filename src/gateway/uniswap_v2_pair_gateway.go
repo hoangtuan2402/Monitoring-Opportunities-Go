@@ -11,17 +11,17 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type uniswapV2Gateway struct {
+type uniswapV2PairGateway struct {
 	ethClient EthereumClient
 }
 
-func NewUniswapV2Gateway(ethClient EthereumClient) DEXGateway {
-	return &uniswapV2Gateway{
+func NewUniswapV2PairGateway(ethClient EthereumClient) DEXGateway {
+	return &uniswapV2PairGateway{
 		ethClient: ethClient,
 	}
 }
 
-func (g *uniswapV2Gateway) GetPoolData(ctx context.Context, poolAddress string) (*models.UniswapV2Pair, error) {
+func (g *uniswapV2PairGateway) GetPoolData(ctx context.Context, poolAddress string) (*models.UniswapV2Pair, error) {
 	addr := common.HexToAddress(poolAddress)
 
 	var (
@@ -123,7 +123,7 @@ func (g *uniswapV2Gateway) GetPoolData(ctx context.Context, poolAddress string) 
 	}, nil
 }
 
-func (g *uniswapV2Gateway) getReserves(ctx context.Context, poolAddr common.Address) ([3]*big.Int, error) {
+func (g *uniswapV2PairGateway) getReserves(ctx context.Context, poolAddr common.Address) ([3]*big.Int, error) {
 	data := EncodeMethodCall("getReserves()")
 
 	result, err := g.ethClient.CallContract(ctx, poolAddr, data)
@@ -138,7 +138,7 @@ func (g *uniswapV2Gateway) getReserves(ctx context.Context, poolAddr common.Addr
 	return [3]*big.Int{reserve0, reserve1, blockTimestamp}, nil
 }
 
-func (g *uniswapV2Gateway) getToken0(ctx context.Context, poolAddr common.Address) (common.Address, error) {
+func (g *uniswapV2PairGateway) getToken0(ctx context.Context, poolAddr common.Address) (common.Address, error) {
 	data := EncodeMethodCall("token0()")
 
 	result, err := g.ethClient.CallContract(ctx, poolAddr, data)
@@ -149,7 +149,7 @@ func (g *uniswapV2Gateway) getToken0(ctx context.Context, poolAddr common.Addres
 	return DecodeAddress(result), nil
 }
 
-func (g *uniswapV2Gateway) getToken1(ctx context.Context, poolAddr common.Address) (common.Address, error) {
+func (g *uniswapV2PairGateway) getToken1(ctx context.Context, poolAddr common.Address) (common.Address, error) {
 	data := EncodeMethodCall("token1()")
 
 	result, err := g.ethClient.CallContract(ctx, poolAddr, data)
@@ -160,7 +160,7 @@ func (g *uniswapV2Gateway) getToken1(ctx context.Context, poolAddr common.Addres
 	return DecodeAddress(result), nil
 }
 
-func (g *uniswapV2Gateway) getTokenData(ctx context.Context, tokenAddr common.Address) (*models.Token, error) {
+func (g *uniswapV2PairGateway) getTokenData(ctx context.Context, tokenAddr common.Address) (*models.Token, error) {
 	var (
 		symbol   string
 		decimals int
@@ -207,7 +207,7 @@ func (g *uniswapV2Gateway) getTokenData(ctx context.Context, tokenAddr common.Ad
 	}, nil
 }
 
-func (g *uniswapV2Gateway) getTokenSymbol(ctx context.Context, tokenAddr common.Address) (string, error) {
+func (g *uniswapV2PairGateway) getTokenSymbol(ctx context.Context, tokenAddr common.Address) (string, error) {
 	data := EncodeMethodCall("symbol()")
 
 	result, err := g.ethClient.CallContract(ctx, tokenAddr, data)
@@ -218,7 +218,7 @@ func (g *uniswapV2Gateway) getTokenSymbol(ctx context.Context, tokenAddr common.
 	return DecodeString(result)
 }
 
-func (g *uniswapV2Gateway) getTokenDecimals(ctx context.Context, tokenAddr common.Address) (int, error) {
+func (g *uniswapV2PairGateway) getTokenDecimals(ctx context.Context, tokenAddr common.Address) (int, error) {
 	data := EncodeMethodCall("decimals()")
 
 	result, err := g.ethClient.CallContract(ctx, tokenAddr, data)

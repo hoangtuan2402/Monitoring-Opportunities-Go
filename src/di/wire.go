@@ -22,7 +22,7 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 
 		// Gateways
 		gateway.NewEthereumRpcClient,
-		gateway.NewUniswapV2Gateway,
+		gateway.NewUniswapV2PairGateway,
 
 		// Repositories
 		repository.NewProductRepository,
