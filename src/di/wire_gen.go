@@ -11,6 +11,7 @@ import (
 	"Monitoring-Opportunities/src/api/controller"
 	"Monitoring-Opportunities/src/config"
 	"Monitoring-Opportunities/src/database"
+	"Monitoring-Opportunities/src/gateway"
 	"Monitoring-Opportunities/src/repository"
 	"Monitoring-Opportunities/src/services"
 )
@@ -27,6 +28,13 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	productRepository := repository.NewProductRepository(mongoDatabase)
 	productService := service.NewProductService(productRepository)
 	productController := handler.NewProductController(productService)
-	serverHTTP := http.NewServerHTTP(userController, productController)
+	ethereumClient, err := gateway.NewEthereumRpcClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+	dexGateway := gateway.NewUniswapV2Gateway(ethereumClient)
+	poolService := service.NewPoolService(dexGateway)
+	poolController := handler.NewPoolController(poolService)
+	serverHTTP := http.NewServerHTTP(userController, productController, poolController)
 	return serverHTTP, nil
 }

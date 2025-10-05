@@ -2,6 +2,7 @@ package http
 
 import (
 	"Monitoring-Opportunities/src/api/controller"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,6 +13,7 @@ type ServerHTTP struct {
 func NewServerHTTP(
 	userController *handler.UserController,
 	productController *handler.ProductController,
+	poolController *handler.PoolController,
 ) *ServerHTTP {
 	engine := gin.New()
 
@@ -37,6 +39,8 @@ func NewServerHTTP(
 	api.POST("products", productController.Create)
 	api.PUT("products/:id", productController.Update)
 	api.DELETE("products/:id", productController.Delete)
+
+	api.GET("/uniswap-v2/pool", poolController.GetPoolData)
 
 	return &ServerHTTP{engine: engine}
 }
