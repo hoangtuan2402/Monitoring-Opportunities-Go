@@ -6,5 +6,5 @@ import (
 )
 
 type DEXGateway interface {
-	GetPoolData(ctx context.Context, poolAddress string) (*models.PoolData, error)
+	GetPoolData(ctx context.Context, poolAddress string) (*models.UniswapV2Pair, error)
 }

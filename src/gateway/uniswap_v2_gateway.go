@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -20,40 +21,94 @@ func NewUniswapV2Gateway(ethClient EthereumClient) DEXGateway {
 	}
 }
 
-func (g *uniswapV2Gateway) GetPoolData(ctx context.Context, poolAddress string) (*models.PoolData, error) {
+func (g *uniswapV2Gateway) GetPoolData(ctx context.Context, poolAddress string) (*models.UniswapV2Pair, error) {
 	addr := common.HexToAddress(poolAddress)
 
-	reserves, err := g.getReserves(ctx, addr)
-	if err != nil {
-		return nil, err
+	var (
+		reserves    [3]*big.Int
+		token0Addr  common.Address
+		token1Addr  common.Address
+		token0Data  *models.Token
+		token1Data  *models.Token
+		blockNumber uint64
+		wg          sync.WaitGroup
+		mu          sync.Mutex
+		errs        []error
+	)
+
+	addError := func(err error) {
+		if err != nil {
+			mu.Lock()
+			errs = append(errs, err)
+			mu.Unlock()
+		}
 	}
 
-	token0Addr, err := g.getToken0(ctx, addr)
-	if err != nil {
-		return nil, err
+	// Step 1: Fetch pool basic info concurrently
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		r, err := g.getReserves(ctx, addr)
+		if err == nil {
+			reserves = r
+		}
+		addError(err)
+	}()
+	go func() {
+		defer wg.Done()
+		t0, err := g.getToken0(ctx, addr)
+		if err == nil {
+			token0Addr = t0
+		}
+		addError(err)
+	}()
+	go func() {
+		defer wg.Done()
+		t1, err := g.getToken1(ctx, addr)
+		if err == nil {
+			token1Addr = t1
+		}
+		addError(err)
+	}()
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return nil, errs[0]
 	}
 
-	token1Addr, err := g.getToken1(ctx, addr)
-	if err != nil {
-		return nil, err
+	// Step 2: Fetch token data concurrently
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		t0, err := g.getTokenData(ctx, token0Addr)
+		if err == nil {
+			token0Data = t0
+		}
+		addError(err)
+	}()
+	go func() {
+		defer wg.Done()
+		t1, err := g.getTokenData(ctx, token1Addr)
+		if err == nil {
+			token1Data = t1
+		}
+		addError(err)
+	}()
+	go func() {
+		defer wg.Done()
+		bn, err := g.ethClient.BlockNumber(ctx)
+		if err == nil {
+			blockNumber = bn
+		}
+		addError(err)
+	}()
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return nil, errs[0]
 	}
 
-	token0Data, err := g.getTokenData(ctx, token0Addr)
-	if err != nil {
-		return nil, err
-	}
-
-	token1Data, err := g.getTokenData(ctx, token1Addr)
-	if err != nil {
-		return nil, err
-	}
-
-	blockNumber, err := g.ethClient.BlockNumber(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get block number: %w", err)
-	}
-
-	return &models.PoolData{
+	return &models.UniswapV2Pair{
 		Address:            poolAddress,
 		Reserve0:           reserves[0].String(),
 		Reserve1:           reserves[1].String(),
@@ -106,14 +161,43 @@ func (g *uniswapV2Gateway) getToken1(ctx context.Context, poolAddr common.Addres
 }
 
 func (g *uniswapV2Gateway) getTokenData(ctx context.Context, tokenAddr common.Address) (*models.Token, error) {
-	symbol, err := g.getTokenSymbol(ctx, tokenAddr)
-	if err != nil {
-		return nil, err
+	var (
+		symbol   string
+		decimals int
+		wg       sync.WaitGroup
+		mu       sync.Mutex
+		errs     []error
+	)
+
+	addError := func(err error) {
+		if err != nil {
+			mu.Lock()
+			errs = append(errs, err)
+			mu.Unlock()
+		}
 	}
 
-	decimals, err := g.getTokenDecimals(ctx, tokenAddr)
-	if err != nil {
-		return nil, err
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		s, err := g.getTokenSymbol(ctx, tokenAddr)
+		if err == nil {
+			symbol = s
+		}
+		addError(err)
+	}()
+	go func() {
+		defer wg.Done()
+		d, err := g.getTokenDecimals(ctx, tokenAddr)
+		if err == nil {
+			decimals = d
+		}
+		addError(err)
+	}()
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return nil, errs[0]
 	}
 
 	return &models.Token{

@@ -8,7 +8,7 @@ type Token struct {
 	Symbol   string `json:"symbol"`
 }
 
-type PoolData struct {
+type UniswapV2Pair struct {
 	Address            string    `json:"address"`
 	Reserve0           string    `json:"reserve0"`
 	Reserve1           string    `json:"reserve1"`

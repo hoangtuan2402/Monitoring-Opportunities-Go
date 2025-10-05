@@ -14,7 +14,7 @@ var (
 )
 
 type PoolService interface {
-	GetPoolData(poolAddress string) (*models.PoolData, error)
+	GetPoolData(poolAddress string) (*models.UniswapV2Pair, error)
 }
 
 type poolService struct {
@@ -27,7 +27,7 @@ func NewPoolService(dexGateway gateway.DEXGateway) PoolService {
 	}
 }
 
-func (s *poolService) GetPoolData(poolAddress string) (*models.PoolData, error) {
+func (s *poolService) GetPoolData(poolAddress string) (*models.UniswapV2Pair, error) {
 	if poolAddress == "" {
 		return nil, ErrInvalidPoolAddress
 	}

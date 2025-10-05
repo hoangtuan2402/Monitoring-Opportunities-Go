@@ -36,7 +36,7 @@ func (c *PoolController) GetPoolData(ctx *gin.Context) {
 
 	ctx.JSON(
 		http.StatusOK,
-		common.BaseResponse[*models.PoolData]{
+		common.BaseResponse[*models.UniswapV2Pair]{
 			Status:  http.StatusOK,
 			Message: "Successfully retrieved pool data",
 			Data:    poolData,
