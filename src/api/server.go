@@ -11,7 +11,6 @@ type ServerHTTP struct {
 }
 
 func NewServerHTTP(
-	userController *handler.UserController,
 	productController *handler.ProductController,
 	poolController *handler.PoolController,
 ) *ServerHTTP {
@@ -25,12 +24,6 @@ func NewServerHTTP(
 
 	// Auth middleware
 	api := engine.Group("/api")
-
-	// User routes
-	api.GET("users", userController.GetByEmail)
-	api.GET("users/:id", userController.GetByID)
-	api.POST("users", userController.Create)
-	api.DELETE("users/:id", userController.Delete)
 
 	// Product routes
 	api.GET("products", productController.GetAll)

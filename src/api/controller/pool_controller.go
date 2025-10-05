@@ -11,10 +11,10 @@ import (
 )
 
 type PoolController struct {
-	poolService service.PoolService
+	poolService service.UniswapV2PairService
 }
 
-func NewPoolController(poolService service.PoolService) *PoolController {
+func NewPoolController(poolService service.UniswapV2PairService) *PoolController {
 	return &PoolController{
 		poolService: poolService,
 	}

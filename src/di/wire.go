@@ -28,12 +28,10 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 		repository.NewProductRepository,
 
 		// Services
-		service.NewUserService,
 		service.NewProductService,
-		service.NewPoolService,
+		service.NewUniswapV2PairService,
 
 		// Controllers
-		handler.NewUserController,
 		handler.NewProductController,
 		handler.NewPoolController,
 

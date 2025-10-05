@@ -13,21 +13,21 @@ var (
 	ErrFetchPoolData      = errors.New("failed to fetch pool data")
 )
 
-type PoolService interface {
+type UniswapV2PairService interface {
 	GetPoolData(poolAddress string) (*models.UniswapV2Pair, error)
 }
 
-type poolService struct {
+type uniswapV2PairService struct {
 	dexGateway gateway.DEXGateway
 }
 
-func NewPoolService(dexGateway gateway.DEXGateway) PoolService {
-	return &poolService{
+func NewUniswapV2PairService(dexGateway gateway.DEXGateway) UniswapV2PairService {
+	return &uniswapV2PairService{
 		dexGateway: dexGateway,
 	}
 }
 
-func (s *poolService) GetPoolData(poolAddress string) (*models.UniswapV2Pair, error) {
+func (s *uniswapV2PairService) GetPoolData(poolAddress string) (*models.UniswapV2Pair, error) {
 	if poolAddress == "" {
 		return nil, ErrInvalidPoolAddress
 	}

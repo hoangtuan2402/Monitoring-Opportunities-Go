@@ -19,8 +19,6 @@ import (
 // Injectors from wire.go:
 
 func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
-	userService := service.NewUserService()
-	userController := handler.NewUserController(userService)
 	mongoDatabase, err := database.NewMongoDatabase(cfg)
 	if err != nil {
 		return nil, err
@@ -33,8 +31,8 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 		return nil, err
 	}
 	dexGateway := gateway.NewUniswapV2PairGateway(ethereumClient)
-	poolService := service.NewPoolService(dexGateway)
-	poolController := handler.NewPoolController(poolService)
-	serverHTTP := http.NewServerHTTP(userController, productController, poolController)
+	uniswapV2PairService := service.NewUniswapV2PairService(dexGateway)
+	poolController := handler.NewPoolController(uniswapV2PairService)
+	serverHTTP := http.NewServerHTTP(productController, poolController)
 	return serverHTTP, nil
 }
